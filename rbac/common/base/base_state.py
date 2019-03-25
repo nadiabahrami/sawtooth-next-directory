@@ -84,6 +84,8 @@ class StateBase:
         """The attribute name for the object type
         Example: ObjectType.Role -> 'role_id'
         Override where behavior deviates from this norm"""
+        if self._name_lower == "user":
+            return "next_id"
         return self._name_lower + "_id"
 
     @property
