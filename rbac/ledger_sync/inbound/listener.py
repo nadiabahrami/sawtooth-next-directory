@@ -15,13 +15,15 @@
 """ Sawtooth Inbound Transaction Queue Listener
 """
 
-from rethinkdb import r
+import rethinkdb as r
+
 from sawtooth_sdk.protobuf import batch_pb2
 from rbac.common.logs import get_default_logger
 from rbac.common.sawtooth.client_sync import ClientSync
 from rbac.common.sawtooth.batcher import batch_to_list
 from rbac.ledger_sync.database import Database
 from rbac.ledger_sync.inbound.rbac_transactions import add_transaction
+from rbac.providers.common.db_queries import connect_to_db
 
 LOGGER = get_default_logger(__name__)
 
@@ -51,7 +53,8 @@ def process(rec, database):
         LOGGER.info("Heading into client sync aka the block chain.")
         status = ClientSync().send_batches_get_status(batch_list=batch_list)
         if status[0]["status"] == "COMMITTED":
-            LOGGER.info("YOU HAVE SUCCESS*************************")
+            if rec["data_type"] == "user":
+                insert_to_user_mapping(rec)
             if "metadata" in rec and rec["metadata"]:
                 data = {
                     "address": rec["address"],
@@ -112,6 +115,38 @@ def get_status_error(status):
         return status[0]["invalid_transactions"][0]["message"]
     except Exception:  # pylint: disable=broad-except
         return "Unhandled error {}".format(status)
+
+
+def insert_to_user_mapping(user_record):
+    """Inset a user to the user_mapping table if it hasn't inserted before.
+    user_record: dict - user object
+    """
+    conn = connect_to_db()
+    # Find user if object already exists in user mapping table
+    existing_rec = (
+        r.table("user_mapping")
+        .filter(
+            {
+                "provider_id": user_record["provider_id"],
+                "remote_id": user_record["data"]["remote_id"],
+            }
+        )
+        .coerce_to("array")
+        .run(conn)
+    )
+
+    # If the user does not exist insert to user_mapping table
+    if not existing_rec:
+        data = {
+            "next_id": user_record["next_id"],
+            "provider_id": user_record["provider_id"],
+            "remote_id": user_record["data"]["remote_id"],
+            "active": True
+        }
+
+        # Insert to user_mapping and close
+        r.table("user_mapping").insert(data).run(conn)
+    conn.close()
 
 
 def listener():

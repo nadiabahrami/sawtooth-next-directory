@@ -198,9 +198,7 @@ def test_reimport_user():
     assert user.name == name
 
     status = User().imports.new(
-        signer_user_id=next_id,
-        signer_keypair=signer_keypair,
-        next_id=next_id,
+        signer_user_id=next_id, signer_keypair=signer_keypair, next_id=next_id
     )
 
     user = User().get(object_id=next_id)
