@@ -126,6 +126,8 @@ class BaseMessage(AddressBase):
             return "related_id"
         if self.message_related_type == self.message_object_type:
             return self.message_relationship_type.name.lower() + "_id"
+        if self.message_related_type.name.lower() == "user":
+            return "next_id"
         return self.message_related_type.name.lower() + "_id"
 
     @property
