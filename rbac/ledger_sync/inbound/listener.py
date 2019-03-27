@@ -141,7 +141,7 @@ def insert_to_user_mapping(user_record):
             "next_id": user_record["next_id"],
             "provider_id": user_record["provider_id"],
             "remote_id": user_record["data"]["remote_id"],
-            "active": True
+            "active": True,
         }
 
         # Insert to user_mapping and close
