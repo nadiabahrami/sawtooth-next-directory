@@ -31,8 +31,6 @@ LOGGER = get_default_logger(__name__)
 def process(rec, database):
     """ Process inbound queue records
     """
-    LOGGER.info("Rec to be processed V")
-    LOGGER.info(rec)
     try:
         add_transaction(rec)
         if "batch" not in rec or not rec["batch"]:
@@ -45,12 +43,11 @@ def process(rec, database):
 
         batch = batch_pb2.Batch()
         batch.ParseFromString(rec["batch"])
-        LOGGER.info("Printing batch V")
+        LOGGER.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ batch")
         LOGGER.info(batch)
         batch_list = batch_to_list(batch=batch)
-        LOGGER.info("This is your batch_list V")
+        LOGGER.info("$$$$$$$$$$$$$$$$$$$$$$$$$$$$ batch_list%%%%%%%%%%%%%%%%%%%%%%")
         LOGGER.info(batch_list)
-        LOGGER.info("Heading into client sync aka the block chain.")
         status = ClientSync().send_batches_get_status(batch_list=batch_list)
         if status[0]["status"] == "COMMITTED":
             if rec["data_type"] == "user":
@@ -93,8 +90,6 @@ def process(rec, database):
             )
         else:
             rec["error"] = get_status_error(status)
-            LOGGER.info("You have failed to commit to the blockchain :(  V")
-            LOGGER.info(rec["error"])
             rec["sync_direction"] = "inbound"
             database.run_query(database.get_table("sync_errors").insert(rec))
             database.run_query(

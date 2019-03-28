@@ -265,6 +265,7 @@ class BaseMessage(AddressBase):
     def make(self, **kwargs):
         """Makes the message (protobuf) from the named arguments passed to make"""
         # pylint: disable=not-callable
+        LOGGER.info("You are in the make function")
         message = self.message_proto()
         make_message(message, self.message_type, **kwargs)
         if hasattr(message, self._name_id) and getattr(message, self._name_id) == "":
@@ -272,6 +273,8 @@ class BaseMessage(AddressBase):
             setattr(message, self._name_id, self.unique_id())
         if hasattr(message, "created_date") and not message.created_date > 0:
             message.created_date = int(time.time())
+        LOGGER.info("Here is the made message V")
+        LOGGER.info(message)
         return message
 
     # pylint: disable=unused-argument
@@ -376,6 +379,13 @@ class BaseMessage(AddressBase):
 
     def batch(self, signer_user_id, signer_keypair, batch=None, **kwargs):
         """Adds a new message to an existing or new batch"""
+        LOGGER.info("You are in batch function")
+        LOGGER.info("This is you signer_user_id (public_key)")
+        LOGGER.info(signer_user_id)
+        LOGGER.info("This is your signer_keypair")
+        LOGGER.info(signer_keypair)
+        LOGGER.info("This is your signer_keypair.public")
+        LOGGER.info(signer_keypair.public_key)
         message = kwargs.get("message")
         if not message:
             message = self.make(**kwargs)
@@ -388,9 +398,12 @@ class BaseMessage(AddressBase):
         transaction, new_batch, _, _ = make(
             payload=payload, signer_keypair=signer_keypair
         )
+        LOGGER.info("Batches")
+        LOGGER.info(batch)
         if batch:
             batch.transactions.extend([transaction])
             return batch
+        LOGGER.info(new_batch)
         return new_batch
 
     def batch_list(self, signer_user_id, signer_keypair, batch_list=None, **kwargs):

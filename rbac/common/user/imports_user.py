@@ -58,6 +58,7 @@ class ImportsUser(BaseMessage):
 
     def make_addresses(self, message, signer_user_id):
         """Makes the appropriate inputs & output addresses for the message type"""
+        # TODO fix this >  Super is being used incorrectly and make returns empty sets
         inputs, _ = super().make_addresses(message, signer_user_id)
 
         user_address = self.address(object_id=message.next_id)

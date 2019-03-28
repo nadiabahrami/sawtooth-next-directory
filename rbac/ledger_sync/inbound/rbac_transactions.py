@@ -60,16 +60,26 @@ def add_transaction(inbound_entry):
             inbound_entry["address"] = bytes_from_hex(address)
             inbound_entry["object_id"] = bytes_from_hex(object_id)
             inbound_entry["object_type"] = addresser.ObjectType.USER.value
-
+            LOGGER.info("************YOU ARE IN ADD_TRANSACTION **************************")
+            LOGGER.info("SIGNER_KEYPAIR public_key:")
+            LOGGER.info(SIGNER_KEYPAIR.public_key)
+            LOGGER.info("SIGNER USER_ID (public key)")
+            LOGGER.info(SIGNER_USER_ID)
+            LOGGER.info("You are about to utilize the make function")
             message = User().imports.make(
                 signer_keypair=SIGNER_KEYPAIR, next_id=next_id, **data
             )
+            LOGGER.info("You are about to use the batch function")
             batch = User().imports.batch(
                 signer_keypair=SIGNER_KEYPAIR,
                 signer_user_id=SIGNER_USER_ID,
                 message=message,
             )
             inbound_entry["batch"] = batch.SerializeToString()
+            LOGGER.info("This is your inbound entries - batch")
+            LOGGER.info(inbound_entry["batch"])
+            LOGGER.info("This is the whole inbound_entry")
+            LOGGER.info(inbound_entry)
             add_metadata(inbound_entry, message)
 
         elif inbound_entry["data_type"] == "group":
