@@ -136,6 +136,8 @@ def insert_to_user_mapping(user_record):
             "next_id": user_record["next_id"],
             "provider_id": user_record["provider_id"],
             "remote_id": user_record["data"]["remote_id"],
+            "public_key": user_record["public_key"],
+            "encrypted_key": user_record["private_key"],
             "active": True,
         }
 

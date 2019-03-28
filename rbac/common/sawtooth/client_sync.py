@@ -111,7 +111,9 @@ class ClientSync:
         """
         if isinstance(batch_list, BaseMessage):
             batch_list = batch_list.SerializeToString()
-            LOGGER.info("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& YOU ARE IN THE SEND BATCHES FUNCTION &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
+            LOGGER.info(
+                "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& YOU ARE IN THE SEND BATCHES FUNCTION &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
+            )
             LOGGER.info(batch_list)
             LOGGER.info("^^^^^^^^^BATCH_LIST ^^^^^^^^")
         return self._client.post("/batches", batch_list)

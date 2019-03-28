@@ -14,6 +14,7 @@
 # ------------------------------------------------------------------------------
 """ LDAP Sawtooth Transaction Creation
 """
+import os
 from uuid import uuid4
 
 from rbac.common.logs import get_default_logger
@@ -21,10 +22,8 @@ from rbac.common import addresser
 from rbac.common.user import User
 from rbac.common.role import Role
 from rbac.common.crypto.keys import Key
+from rbac.common.crypto.secrets import encrypt_private_key
 from rbac.common.util import bytes_from_hex
-
-SIGNER_KEYPAIR = Key()
-SIGNER_USER_ID = SIGNER_KEYPAIR.public_key
 
 LOGGER = get_default_logger(__name__)
 
@@ -43,12 +42,20 @@ META_DATA_PROHIBITED = {
     "related_id",
 }
 
+AES_KEY = os.getenv("AES_KEY")
+
 
 def add_transaction(inbound_entry):
     """ Adds transactional entries onto inbound_entry
     """
     try:
         data = inbound_entry["data"]
+        key_pair = Key()
+        encrypted_private_key = encrypt_private_key(
+            AES_KEY, key_pair.public_key, key_pair.private_key_bytes
+        )
+        inbound_entry["public_key"] = key_pair.public_key
+        inbound_entry["private_key"] = encrypted_private_key
 
         if inbound_entry["data_type"] == "user":
 
@@ -60,19 +67,19 @@ def add_transaction(inbound_entry):
             inbound_entry["address"] = bytes_from_hex(address)
             inbound_entry["object_id"] = bytes_from_hex(object_id)
             inbound_entry["object_type"] = addresser.ObjectType.USER.value
-            LOGGER.info("************YOU ARE IN ADD_TRANSACTION **************************")
+            LOGGER.info(
+                "************YOU ARE IN ADD_TRANSACTION **************************"
+            )
             LOGGER.info("SIGNER_KEYPAIR public_key:")
-            LOGGER.info(SIGNER_KEYPAIR.public_key)
-            LOGGER.info("SIGNER USER_ID (public key)")
-            LOGGER.info(SIGNER_USER_ID)
+            LOGGER.info(key_pair.public_key)
             LOGGER.info("You are about to utilize the make function")
             message = User().imports.make(
-                signer_keypair=SIGNER_KEYPAIR, next_id=next_id, **data
+                signer_keypair=key_pair, next_id=next_id, **data
             )
             LOGGER.info("You are about to use the batch function")
             batch = User().imports.batch(
-                signer_keypair=SIGNER_KEYPAIR,
-                signer_user_id=SIGNER_USER_ID,
+                signer_keypair=key_pair,
+                signer_user_id=key_pair.public_key,
                 message=message,
             )
             inbound_entry["batch"] = batch.SerializeToString()
@@ -93,11 +100,11 @@ def add_transaction(inbound_entry):
             inbound_entry["object_type"] = addresser.ObjectType.ROLE.value
 
             message = Role().imports.make(
-                signer_keypair=SIGNER_KEYPAIR, role_id=next_id, **data
+                signer_keypair=key_pair, role_id=next_id, **data
             )
             batch = Role().imports.batch(
-                signer_keypair=SIGNER_KEYPAIR,
-                signer_user_id=SIGNER_USER_ID,
+                signer_keypair=key_pair,
+                signer_user_id=key_pair.public_key,
                 message=message,
             )
             inbound_entry["batch"] = batch.SerializeToString()
