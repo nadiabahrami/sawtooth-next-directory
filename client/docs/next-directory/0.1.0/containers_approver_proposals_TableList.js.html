@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>components/search/Search.js - Documentation</title>
+    <title>containers/approver/proposals/TableList.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,7 +29,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/search/Search.js</h1>
+    <h1 class="page-title">containers/approver/proposals/TableList.js</h1>
     
 
     
@@ -56,68 +56,241 @@ limitations under the License.
 
 
 import React, { Component } from 'react';
-import { Input, Search as SearchInput } from 'semantic-ui-react';
+import {
+  Checkbox,
+  Header,
+  Icon,
+  Table } from 'semantic-ui-react';
 import PropTypes from 'prop-types';
-import './Search.css';
+
+
+import './TableList.css';
 import * as utils from 'services/Utils';
+import Avatar from 'components/layouts/Avatar';
 
 
 /**
  *
- * @class         Search
- * @description   Component encapsulating app search functionality
- *
+ * @class         TableList
+ * @description   Displays roles in a list when approving proposals
  *
  */
-class Search extends Component {
+class TableList extends Component {
 
   static propTypes = {
-    clearSearchData:        PropTypes.func,
-    fetchingSearchResults:  PropTypes.bool,
-    search:                 PropTypes.func,
-    searchInput:            PropTypes.string,
-    searchLimit:            PropTypes.number,
-    searchTypes:            PropTypes.array,
-    setSearchInput:         PropTypes.func,
-    setSearchStart:         PropTypes.func,
-    type:                   PropTypes.string,
+    getRoles:              PropTypes.func,
+    getUsers:              PropTypes.func,
+    handleChange:          PropTypes.func,
+    openProposalsByRole:   PropTypes.object,
+    openProposalsByUser:   PropTypes.object,
+    roleFromId:            PropTypes.func,
+    roles:                 PropTypes.array,
+    selectedProposals:     PropTypes.array,
+    selectedRoles:         PropTypes.array,
+    users:                 PropTypes.array,
+  };
+
+
+  state = { column: null, direction: null };
+
+
+  // TODO: Refactor
+  /**
+   * Entry point to perform tasks required to render
+   * component. Get users not loaded in client.
+   */
+  componentDidMount  () {
+    const {
+      getRoles,
+      getUsers,
+      openProposalsByRole,
+      openProposalsByUser,
+      roles,
+      users } = this.props;
+
+    if (!openProposalsByUser) return;
+    let collection;
+    const newUsers = Object.keys(openProposalsByUser);
+
+    users ?
+      collection = newUsers.filter(newUser =>
+        !users.find(user => newUser === user.id)) :
+      collection = newUsers;
+
+    getUsers(collection, true);
+
+    const newRoles = Object.keys(openProposalsByRole);
+    roles ?
+      collection = newRoles.filter(newRole =>
+        !roles.find(role => newRole === role.id)) :
+      collection = newRoles;
+
+    getRoles(collection);
+  }
+
+
+  /**
+   * Called whenever Redux state changes. Get roles and
+   * users not loaded in client on state change.
+   * @param {object} prevProps Props before update
+   * @returns {undefined}
+   */
+  componentDidUpdate (prevProps) {
+    const {
+      getRoles,
+      getUsers,
+      openProposalsByRole,
+      openProposalsByUser } = this.props;
+
+    const newRoles = Object.keys(openProposalsByRole);
+    const newUsers = Object.keys(openProposalsByUser);
+    const oldRoles = Object.keys(prevProps.openProposalsByRole);
+    const oldUsers = Object.keys(prevProps.openProposalsByUser);
+
+    if (newUsers.length > oldUsers.length) {
+      const diff = newUsers.filter(user => !oldUsers.includes(user));
+      getUsers(diff, true);
+    }
+    if (newRoles.length > oldRoles.length) {
+      const diff = newRoles.filter(role => !oldRoles.includes(role));
+      getRoles(diff);
+    }
+  }
+
+
+  /**
+   * Get role name from role ID
+   * @param {string} roleId Role ID
+   * @returns {string}
+   */
+  roleName = (roleId) => {
+    const { roleFromId } = this.props;
+    const role = roleFromId(roleId);
+    return role &amp;&amp; role.name;
   };
 
 
   /**
-   * Handle form change event
-   * @param {object} event Event passed by Semantic UI
-   * @param {string} name  Name of form element derived from
-   *                       HTML attribute 'name'
-   * @param {string} value Value of form field
+   * Render user avatars for a given role
+   * @param {string} roleId Role ID
+   * @returns {JSX}
    */
-  handleChange = (event, { name, value }) => {
-    const {
-      clearSearchData,
-      setSearchStart,
-      searchLimit,
-      searchTypes,
-      search,
-      setSearchInput,
-      type } = this.props;
-
-    setSearchInput(value);
-    setSearchStart(1);
-    clearSearchData();
-
-    if (utils.isWhitespace(value)) return;
-
-    const query = {
-      query: {
-        search_input: value,
-        search_object_types: searchTypes,
-        page_size: searchLimit,
-        page: 1,
-      },
-    };
-
-    search(type, query);
+  renderUsers (roleId) {
+    const { openProposalsByRole } = this.props;
+    return (
+      &lt;div className='pull-right'>
+        { openProposalsByRole[roleId].map((proposal, index) => {
+          if (index > 2) return null;
+          if (index === 2) {
+            return (
+              &lt;span
+                key={proposal.id}
+                className='next-role-list-icon'>
+                &lt;Icon
+                  color='orange'
+                  name='add'
+                  size='tiny'/>
+                {openProposalsByRole[roleId].length - 2}
+              &lt;/span>
+            );
+          }
+          return (
+            &lt;Avatar
+              key={proposal.id}
+              userId={proposal.opener}
+              size='medium'
+              {...this.props}/>
+          );
+        })}
+      &lt;/div>
+    );
   }
+
+
+  /**
+   * Proposal item is checked / unchecked based on its presence in
+   * selectedProposals state array
+   * @param {object} proposal Selected proposal
+   * @returns {boolean}
+   */
+  isProposalChecked = (proposal) => {
+    const { selectedProposals } = this.props;
+    return selectedProposals.indexOf(proposal.id) !== -1;
+  }
+
+
+  /**
+   * Is checkbox state indeterminate (i.e., should show dot)
+   * @param {string} roleId Selected role
+   * @returns {boolean}
+   */
+  // TODO: Indeterminate state not adding class to UI in one scenario
+  isIndeterminate = (roleId) => {
+    const { selectedProposals, openProposalsByRole } = this.props;
+    const selected = openProposalsByRole[roleId].filter(proposal =>
+      selectedProposals.includes(proposal.id));
+
+    return selected.length > 0 &amp;&amp;
+      selected.length &lt; openProposalsByRole[roleId].length;
+  }
+
+
+  /**
+   * Toggle checkbox when table row clicked
+   * @param {string} proposal Proposal
+   */
+  handleRowClick = (proposal) => {
+    const { handleChange } = this.props;
+    handleChange(undefined, {
+      checked: !this.isProposalChecked(proposal),
+      proposal: proposal.id,
+      user: proposal.opener,
+    });
+  }
+
+
+  /**
+   * Sort
+   */
+  handleSort = () => {
+    // Not yet implemented
+  };
+
+
+  /**
+   * Get role name from role ID
+   * @param {string} roleId Role ID
+   * @returns {string}
+   */
+  roleName = (roleId) => {
+    const { roleFromId } = this.props;
+    const role = roleFromId(roleId);
+    return role &amp;&amp; role.name;
+  };
+
+
+  /**
+   * Get user name from user ID
+   * @param {string} userId User ID
+   * @returns {string}
+   */
+  userName = (userId) => {
+    const { userFromId } = this.props;
+    const user = userFromId(userId);
+    return user &amp;&amp; user.name;
+  };
+
+
+  /**
+   * Get user email from user ID
+   * @param {string} userId User ID
+   * @returns {string}
+   */
+  userEmail = (userId) => {
+    const { userFromId } = this.props;
+    const user = userFromId(userId);
+    return user &amp;&amp; user.email;
+  };
 
 
   /**
@@ -125,31 +298,87 @@ class Search extends Component {
    * @returns {JSX}
    */
   render () {
-    const { fetchingSearchResults, searchInput } = this.props;
+    const { handleChange, openProposals } = this.props;
+    const { column, direction } = this.state;
+
     return (
-      &lt;div>
-        &lt;SearchInput
-          fluid
-          input={() => &lt;Input
-            fluid
-            loading={fetchingSearchResults}
-            size='large'
-            icon='search'
-            placeholder='Search...'
-            name='searchInput'
-            value={searchInput}
-            onChange={this.handleChange}/>}
-          className='next-search-input'
-          category
-          loading={false}/>
-      &lt;/div>
+      &lt;Table
+        sortable
+        selectable
+        singleLine
+        striped
+        padded='very'
+        className='cursor-pointer'>
+        &lt;Table.Header>
+          &lt;Table.Row>
+            &lt;Table.HeaderCell/>
+            &lt;Table.HeaderCell
+              sorted={column === 'role_name' ? direction : null}
+              onClick={this.handleSort('role_name')}>
+              Role Name
+            &lt;/Table.HeaderCell>
+            &lt;Table.HeaderCell
+              sorted={column === 'requester' ? direction : null}
+              onClick={this.handleSort('requester')}>
+              Requester
+            &lt;/Table.HeaderCell>
+            &lt;Table.HeaderCell
+              sorted={column === 'requester_email' ? direction : null}
+              onClick={this.handleSort('requester_email')}>
+              Requester Email
+            &lt;/Table.HeaderCell>
+            &lt;Table.HeaderCell
+              sorted={column === 'created_date' ? direction : null}
+              onClick={this.handleSort('created_date')}>
+              Opened On
+            &lt;/Table.HeaderCell>
+          &lt;/Table.Row>
+        &lt;/Table.Header>
+        &lt;Table.Body>
+          { openProposals &amp;&amp; openProposals.map(proposal => (
+            &lt;Table.Row
+              key={proposal.id}
+              onClick={() => this.handleRowClick(proposal)}>
+              &lt;Table.Cell collapsing>
+                &lt;Checkbox
+                  checked={this.isProposalChecked(proposal)}
+                  proposal={proposal.id}
+                  user={proposal.opener}
+                  onChange={handleChange}/>
+              &lt;/Table.Cell>
+              &lt;Table.Cell>
+                {this.roleName(proposal.object)}
+              &lt;/Table.Cell>
+              &lt;Table.Cell>
+                &lt;Header as='h4' className='next-approver-approved-table-opener'>
+                  &lt;Avatar
+                    userId={proposal.opener}
+                    size='small'
+                    {...this.props}/>
+                  &lt;Header.Content>
+                    {this.userName(proposal.opener)}
+                  &lt;/Header.Content>
+                &lt;/Header>
+              &lt;/Table.Cell>
+              &lt;Table.Cell className='next-approver-approved-table-email'>
+                {this.userEmail(proposal.opener)}
+                &lt;Icon name='info circle' color='grey'/>
+              &lt;/Table.Cell>
+              &lt;Table.Cell>
+                {utils.formatDate(proposal.created_date)}
+              &lt;/Table.Cell>
+            &lt;/Table.Row>
+          ))}
+        &lt;/Table.Body>
+      &lt;/Table>
     );
+
   }
 
 }
 
 
-export default Search;
+export default TableList;
 </code></pre>
         </article>
     </section>

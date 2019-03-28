@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>components/search/Search.js - Documentation</title>
+    <title>components/layouts/About.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,7 +29,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">components/search/Search.js</h1>
+    <h1 class="page-title">components/layouts/About.js</h1>
     
 
     
@@ -56,67 +56,25 @@ limitations under the License.
 
 
 import React, { Component } from 'react';
-import { Input, Search as SearchInput } from 'semantic-ui-react';
+import {
+  Button,
+  Header,
+  Modal } from 'semantic-ui-react';
 import PropTypes from 'prop-types';
-import './Search.css';
-import * as utils from 'services/Utils';
+import './About.css';
 
 
 /**
  *
- * @class         Search
- * @description   Component encapsulating app search functionality
- *
+ * @class         About
+ * @description   About modal
  *
  */
-class Search extends Component {
+class About extends Component {
 
   static propTypes = {
-    clearSearchData:        PropTypes.func,
-    fetchingSearchResults:  PropTypes.bool,
-    search:                 PropTypes.func,
-    searchInput:            PropTypes.string,
-    searchLimit:            PropTypes.number,
-    searchTypes:            PropTypes.array,
-    setSearchInput:         PropTypes.func,
-    setSearchStart:         PropTypes.func,
-    type:                   PropTypes.string,
-  };
-
-
-  /**
-   * Handle form change event
-   * @param {object} event Event passed by Semantic UI
-   * @param {string} name  Name of form element derived from
-   *                       HTML attribute 'name'
-   * @param {string} value Value of form field
-   */
-  handleChange = (event, { name, value }) => {
-    const {
-      clearSearchData,
-      setSearchStart,
-      searchLimit,
-      searchTypes,
-      search,
-      setSearchInput,
-      type } = this.props;
-
-    setSearchInput(value);
-    setSearchStart(1);
-    clearSearchData();
-
-    if (utils.isWhitespace(value)) return;
-
-    const query = {
-      query: {
-        search_input: value,
-        search_object_types: searchTypes,
-        page_size: searchLimit,
-        page: 1,
-      },
-    };
-
-    search(type, query);
+    handleClose:      PropTypes.func,
+    showModal:        PropTypes.bool,
   }
 
 
@@ -125,31 +83,38 @@ class Search extends Component {
    * @returns {JSX}
    */
   render () {
-    const { fetchingSearchResults, searchInput } = this.props;
+    const { handleClose, showModal } = this.props;
     return (
-      &lt;div>
-        &lt;SearchInput
-          fluid
-          input={() => &lt;Input
-            fluid
-            loading={fetchingSearchResults}
-            size='large'
-            icon='search'
-            placeholder='Search...'
-            name='searchInput'
-            value={searchInput}
-            onChange={this.handleChange}/>}
-          className='next-search-input'
-          category
-          loading={false}/>
-      &lt;/div>
+      &lt;Modal
+        open={showModal}
+        onClose={handleClose}
+        size='mini'>
+        &lt;Header
+          id='next-about-modal-header'
+          icon='info circle'
+          content='About'/>
+        &lt;Modal.Content id='next-about-modal-content'>
+          &lt;Header
+            as='h3'
+            content='NEXT Directory'/>
+          &lt;span>
+            {'Version '}
+            {process.env.REACT_APP_VERSION_NUMBER}
+          &lt;/span>
+        &lt;/Modal.Content>
+        &lt;Modal.Actions id='next-about-modal-actions'>
+          &lt;Button primary size='large' onClick={handleClose}>
+            Close
+          &lt;/Button>
+        &lt;/Modal.Actions>
+      &lt;/Modal>
     );
   }
 
 }
 
 
-export default Search;
+export default About;
 </code></pre>
         </article>
     </section>
