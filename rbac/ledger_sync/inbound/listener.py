@@ -32,6 +32,9 @@ def process(rec, database):
     """ Process inbound queue records
     """
     try:
+        if "members" in rec["data"]:
+            rec = update_members_field(rec)
+
         add_transaction(rec)
         if "batch" not in rec or not rec["batch"]:
             database.run_query(
@@ -144,6 +147,26 @@ def insert_to_user_mapping(user_record):
         # Insert to user_mapping and close
         r.table("user_mapping").insert(data).run(conn)
     conn.close()
+
+
+def update_members_field(resource):
+    """ Takes in a resource dict that contains a list of role members and switches
+        their remote_ids with the next_id of the same user.
+    """
+    members_list = resource["data"]["members"]
+    new_members_list = resource["data"]["members"]
+    conn = connect_to_db()
+    for user in members_list:
+        user_in_db = r.table("users").filter({"remote_id": user}).coerce_to("array").run(conn)
+
+        if user_in_db:
+            user_next_id = user_in_db[0].get("next_id")
+            new_members_list.remove(user)
+            new_members_list.append(user_next_id)
+
+    resource["data"]["members"] = new_members_list
+    conn.close()
+    return resource
 
 
 def listener():
