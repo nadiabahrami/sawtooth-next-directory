@@ -13,7 +13,7 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 """Users APIs."""
-
+import os
 from uuid import uuid4
 import hashlib
 
@@ -39,6 +39,7 @@ from rbac.common.crypto.secrets import generate_api_key
 
 from rbac.server.db import db_utils
 
+AES_KEY = os.getenv("AES_KEY")
 LOGGER = get_default_logger(__name__)
 USERS_BP = Blueprint("users")
 
@@ -76,6 +77,7 @@ async def create_new_user(request):
         request.app.config.DB_PORT,
         request.app.config.DB_NAME,
     )
+    # Check if username already exists
     if await users_query.fetch_username_match_count(conn, username_created) > 0:
         # Throw Error response to Next_UI
         raise ApiBadRequest(
@@ -84,23 +86,24 @@ async def create_new_user(request):
     conn.close()
 
     # Generate keys
-    txn_key = Key()
-    txn_user_id = User().unique_id()
+
+    key_pair = Key()
+    next_id = str(uuid4())
     encrypted_private_key = encrypt_private_key(
-        request.app.config.AES_KEY, txn_key.public_key, txn_key.private_key_bytes
+        AES_KEY, key_pair.public_key, key_pair.private_key_bytes
     )
 
     # Build create user transaction
     batch_list = User().batch_list(
-        signer_keypair=txn_key,
-        signer_user_id=txn_user_id,
-        next_id=txn_user_id,
+        signer_keypair=key_pair,
+        signer_user_id=next_id,
+        next_id=next_id,
         name=request.json.get("name"),
         username=request.json.get("username"),
         email=request.json.get("email"),
         metadata=request.json.get("metadata"),
         manager=request.json.get("manager"),
-        key=txn_key.public_key,
+        key=key_pair.public_key,
     )
 
     # Submit transaction and wait for complete
@@ -114,7 +117,7 @@ async def create_new_user(request):
     ).hexdigest()
 
     auth_entry = {
-        "next_id": txn_user_id,
+        "next_id": next_id,
         "hashed_password": hashed_password,
         "encrypted_private_key": encrypted_private_key,
         "username": request.json.get("username"),
