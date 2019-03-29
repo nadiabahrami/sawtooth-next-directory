@@ -135,7 +135,7 @@ async def create_new_user(request):
     conn.close()
 
     # Send back success response
-    return create_user_response(request, txn_user_id)
+    return create_user_response(request, next_id)
 
 
 @USERS_BP.get("api/users/<next_id>")
