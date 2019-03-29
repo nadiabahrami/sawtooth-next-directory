@@ -113,6 +113,9 @@ def _update_legacy(database, block_num, address, resource, data_type):
     """ Update the legacy sync tables (expansion by object type name)
     """
     try:
+        if "identifiers" in resource:
+            resource = _update_identifiers_field(resource, database)
+
         data = {
             "id": address,
             "start_block_num": int(block_num),
@@ -136,6 +139,33 @@ def _update_legacy(database, block_num, address, resource, data_type):
     except Exception as err:  # pylint: disable=broad-except
         LOGGER.warning("_update_legacy %s error:", type(err))
         LOGGER.warning(err)
+
+
+def _update_identifiers_field(resource, database):
+    """ Takes in a resource dict that contains the identifiers key and switches
+        the remote_ids in the list of identifiers with the next_id of the same user.
+    """
+    identifiers_list = resource["identifiers"]
+    for user in identifiers_list:
+        identifiers_list.remove(user)
+        user_in_db_query = (
+            database.get_table("users")
+            .filter(lambda doc: doc["remote_id"].match("(?i)^" + user + "$"))
+            .limit(1)
+            .coerce_to("array")
+        )
+        user_in_db = database.run_query(user_in_db_query)
+        if user_in_db:
+            user_next_id = user_in_db[0].get("next_id")
+            identifiers_list.append(user_next_id)
+            pass
+        else:
+            identifiers_list.append(user)
+            LOGGER.warning(
+                "User currently has no remote_id field set - keeping remote_id"
+            )
+    resource["identifiers"] = identifiers_list
+    return resource
 
 
 def _update(database, block_num, address, resource):
