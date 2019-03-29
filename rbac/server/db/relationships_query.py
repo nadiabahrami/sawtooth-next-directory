@@ -29,11 +29,7 @@ def fetch_relationships(table, index, identifier):
         .get_all(identifier, index=index)
         .get_field("identifiers")
         .coerce_to("array")
-        .concat_map(
-            lambda identifiers: r.table("users")
-            .filter({"remote_id": identifiers[0]})
-            .get_field("next_id")
-        )
+        .concat_map(lambda identifiers: identifiers)
     )
 
 
