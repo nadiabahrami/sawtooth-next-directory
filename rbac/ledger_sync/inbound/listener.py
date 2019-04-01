@@ -144,17 +144,17 @@ def update_members_field(resource):
         their remote_ids with the next_id of the same user.
     """
     members_list = resource["data"]["members"]
-    new_members_list = resource["data"]["members"]
+    new_members_list = []
     conn = connect_to_db()
     for user in members_list:
         user_in_db = (
             r.table("users").filter({"remote_id": user}).coerce_to("array").run(conn)
         )
-
         if user_in_db:
             user_next_id = user_in_db[0].get("next_id")
-            new_members_list.remove(user)
             new_members_list.append(user_next_id)
+        else:
+            new_members_list.append(user)
 
     resource["data"]["members"] = new_members_list
     conn.close()
