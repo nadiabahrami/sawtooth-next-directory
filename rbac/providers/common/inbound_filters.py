@@ -27,7 +27,7 @@ def inbound_user_filter(user, provider):
     standardized_user = {}
     for key, value in USER_TRANSFORM.items():
         if value[provider] in user:
-            value = inbound_value_filter(user, value[provider])
+            value = inbound_value_filter(user[value[provider]], value[provider])
             standardized_user[key] = value
     if "email" not in standardized_user and "user_principal_name" in standardized_user:
         standardized_user["email"] = standardized_user["user_principal_name"]
@@ -44,22 +44,18 @@ def inbound_group_filter(group, provider):
     standardized_group = {}
     for key, value in GROUP_TRANSFORM.items():
         if value[provider] in group:
-            value = inbound_value_filter(group, value[provider])
+            value = inbound_value_filter(group[value[provider]], value[provider])
             standardized_group[key] = value
     return standardized_group
 
 
-def inbound_value_filter(ldap_payload, inbound_entry_field):
+def inbound_value_filter(inbound_value, field_name):
     """Unwraps LDAP attributes. Converts datetime.datetime to seconds."""
-    value = ldap_payload[inbound_entry_field]
-    if inbound_entry_field == "member" and hasattr(
-        ldap_payload[inbound_entry_field], "values"
-    ):
-        value = ldap_payload[inbound_entry_field].values
+    value = inbound_value
+    if field_name == "member" and isinstance(inbound_value, str):
+        value = [inbound_value]
     else:
-        if hasattr(value, "value"):
-            value = value.value
-        elif isinstance(value, datetime.datetime):
+        if isinstance(value, datetime.datetime):
             epoch_zero = datetime.datetime(1970, 1, 1, tzinfo=value.tzinfo)
             value = int((value - epoch_zero).total_seconds())
     return value

@@ -263,6 +263,28 @@ def is_user_in_db(email):
         return result > 0
 
 
+def get_user_next_id(distinguished_name):
+    """Returns the next_id for a given user's distinguished name.
+
+    Args:
+        distinguished_name:
+            str: A string containing the user's AD distinguished name.
+
+    Returns:
+        next_id:
+            str: A string containing the user's unique next_id.
+    """
+    with connect_to_db() as db_connection:
+        results = list(
+            r.table("users")
+            .filter({"remote_id": distinguished_name})
+            .pluck("next_id")
+            .run(db_connection)
+        )[0]
+        next_id = results["next_id"]
+    return next_id
+
+
 def is_group_in_db(name):
     """Returns the number of groups from the roles table in rethinkdb with
     the given name.
@@ -338,9 +360,10 @@ def is_user_a_role_member(role_common_name, user_common_name):
     user_distinct_name = (
         "CN=%s,OU=Users,OU=Accounts,DC=AD2012,DC=LAB" % user_common_name
     )
+    next_id = get_user_next_id(user_distinct_name)
     user_is_role_member = False
     for member in get_role_members(role_id):
-        if member["related_id"] == user_distinct_name:
+        if member["related_id"] == next_id:
             user_is_role_member = True
     return user_is_role_member
 
