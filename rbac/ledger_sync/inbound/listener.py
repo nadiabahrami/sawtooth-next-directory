@@ -33,6 +33,7 @@ def process(rec, conn):
         # Changes members from distinguished name to next_id for roles
         if "members" in rec["data"]:
             rec = translate_field_to_next(rec, "members")
+        if "owners" in rec["data"]:
             rec = translate_field_to_next(rec, "owners")
 
         add_transaction(rec)
