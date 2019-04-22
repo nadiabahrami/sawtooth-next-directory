@@ -139,3 +139,11 @@ message DeleteRole {
     repeated string members = 4;
 
 }
+
+message DeleteRoleOwner {
+
+    string role_id = 1;
+
+    string next_id = 2;
+
+}
