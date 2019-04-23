@@ -231,6 +231,8 @@ class StateBase:
     def _get_related_id(self, item):
         """Find the related_id attribute value on an object
         Prefers related_id over specific IDs like next_id"""
+        LOGGER.info("my item")
+        LOGGER.info(item)
         if hasattr(item, "related_id"):
             return getattr(item, "related_id")
         if self._related_id != "related_id" and hasattr(item, self._related_id):
@@ -493,6 +495,7 @@ class StateBase:
     ):
         """Check an object exists in the blockchain via inputs and input_state
         input_state is the result of a state query on addresses=inputs"""
+        LOGGER.info("State inputs address ------->")
         address = self.address(object_id=object_id, related_id=related_id)
         if address not in inputs:
             if skip_if_not_in_inputs:

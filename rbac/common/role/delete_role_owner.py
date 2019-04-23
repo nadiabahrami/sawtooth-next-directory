@@ -57,7 +57,7 @@ class DeleteRoleOwner(BaseMessage):
     def make_addresses(self, message, signer_user_id):
         """Makes the appropriate inputs & output addresses for the message type"""
         inputs = set({})
-
+        LOGGER.info("Role ID<<<<>>>>")
         role_address = self.address(object_id=message.role_id)
         inputs.add(role_address)
 
@@ -82,6 +82,7 @@ class DeleteRoleOwner(BaseMessage):
             input_state=input_state,
             store=store,
         )
+        LOGGER.info("Checking if role exists in state.......")
         if not addresser.role.exists_in_state_inputs(
             inputs=payload.inputs, input_state=input_state, object_id=message.role_id
         ):

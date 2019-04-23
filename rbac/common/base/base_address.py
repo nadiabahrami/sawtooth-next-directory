@@ -134,6 +134,12 @@ class AddressBase(StateBase):
 
     def _address(self, object_id, related_id):
         """Makes an address using the address scheme"""
+        LOGGER.info("MAKING ADDRESSSSSS <<<>>>>>>>")
+        LOGGER.info(object_id)
+        LOGGER.info(related_id)
+        LOGGER.info(self.object_type.name)
+        LOGGER.info(self.related_type.name)
+        LOGGER.info(self.relationship_type.name)
         address = (
             family.namespace
             + PATTERN_ZERO_BYTE * 2
@@ -144,6 +150,8 @@ class AddressBase(StateBase):
             + self.hash(related_id)
             + PATTERN_ZERO_BYTE
         )
+        LOGGER.info("My Address ------->")
+        LOGGER.info(address)
         return address
 
     def parse(self, address):
