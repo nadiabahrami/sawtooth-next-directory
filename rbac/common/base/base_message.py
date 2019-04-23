@@ -141,13 +141,22 @@ class BaseMessage(AddressBase):
         Override where behavior differs"""
         if (
             self.message_action_type
-            and self.message_subaction_type
             and self.message_relationship_type
         ):
-            if (
-                self.message_related_type
-                and self.message_related_type != addresser.address_space.ObjectType.USER
-            ):
+            if self.message_subaction_type:
+                if (
+                    self.message_related_type
+                    and self.message_related_type != addresser.address_space.ObjectType.USER
+                ):
+                    return (
+                        self.message_action_type.name
+                        + "_"
+                        + self.message_subaction_type.name
+                        + "_"
+                        + self.message_object_type.name
+                        + "_"
+                        + self.message_related_type.name
+                    )
                 return (
                     self.message_action_type.name
                     + "_"
@@ -155,17 +164,19 @@ class BaseMessage(AddressBase):
                     + "_"
                     + self.message_object_type.name
                     + "_"
-                    + self.message_related_type.name
+                    + self.message_relationship_type.name
                 )
-            return (
-                self.message_action_type.name
-                + "_"
-                + self.message_subaction_type.name
-                + "_"
-                + self.message_object_type.name
-                + "_"
-                + self.message_relationship_type.name
-            )
+            elif (
+                self.message_relationship_type != addresser.address_space.RelationshipType.NONE
+                and self.message_relationship_type.name != "ATTRIBUTES"
+            ):
+                return (
+                    self.message_action_type.name
+                    + "_"
+                    + self.message_object_type.name
+                    + "_"
+                    + self.message_relationship_type.name
+                )
         if self.message_action_type.name:
             return self.message_action_type.name + "_" + self.message_object_type.name
         return self._message_type_name

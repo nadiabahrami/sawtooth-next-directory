@@ -275,22 +275,22 @@ def delete_user_transaction(inbound_entry, user_in_db, key_pair, data):
     """Composes transactions for deleting a user.  This includes deleting role_owner,
     role_admin, and role_member relationships and user object.
     """
-    user_delete = DeleteUser()
+    # user_delete = DeleteUser()
     next_id = user_in_db[0]["next_id"]
     inbound_entry = add_sawtooth_prereqs(
         entry_id=next_id, inbound_entry=inbound_entry, data_type="user"
     )
     batch = create_owner_deletion_message(key_pair, next_id)
 
-    message = user_delete.make(
-        signer_keypair=key_pair, next_id=next_id, **data
-    )
-    batch = user_delete.batch(
-        signer_keypair=key_pair,
-        signer_user_id=key_pair.public_key,
-        batch=batch,
-        message=message,
-    )
+    # message = user_delete.make(
+    #     signer_keypair=key_pair, next_id=next_id, **data
+    # )
+    # batch = user_delete.batch(
+    #     signer_keypair=key_pair,
+    #     signer_user_id=key_pair.public_key,
+    #     batch=batch,
+    #     message=message,
+    # )
     inbound_entry["batch"] = batch.SerializeToString()
 
 
@@ -309,7 +309,7 @@ def create_owner_deletion_message(key_pair, next_id):
         owner_delete = DeleteRoleOwner()
         for role in roles:
             owner_message = owner_delete.make(
-                signer_keypair=key_pair, next_id=next_id, role_id= role["role_id"]
+                signer_keypair=key_pair, related_id=next_id, role_id=role["role_id"]
             )
             batch = owner_delete.batch(
                 signer_keypair=key_pair,
@@ -317,4 +317,5 @@ def create_owner_deletion_message(key_pair, next_id):
                 batch=batch,
                 message=owner_message,
             )
+            break
     return batch

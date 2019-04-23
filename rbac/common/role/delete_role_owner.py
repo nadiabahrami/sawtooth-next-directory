@@ -35,14 +35,9 @@ class DeleteRoleOwner(BaseMessage):
         return addresser.MessageActionType.DELETE
 
     @property
-    def address_type(self):
-        """The address type from AddressSpace implemented by this class"""
-        return addresser.AddressSpace.ROLE
-
-    @property
     def object_type(self):
         """The object type from AddressSpace implemented by this class"""
-        return addresser.ObjectType.USER
+        return addresser.ObjectType.ROLE
 
     @property
     def related_type(self):
@@ -53,6 +48,11 @@ class DeleteRoleOwner(BaseMessage):
     def relationship_type(self):
         """The related type from AddressSpace implemented by this class"""
         return addresser.RelationshipType.OWNER
+    
+    @property
+    def _state_container_list_name(self):
+        """Role state container collection name contains _attributes (role_attributes)"""
+        return "relationships"
 
     def make_addresses(self, message, signer_user_id):
         """Makes the appropriate inputs & output addresses for the message type"""
@@ -61,10 +61,8 @@ class DeleteRoleOwner(BaseMessage):
         role_address = self.address(object_id=message.role_id)
         inputs.add(role_address)
 
-        for user in message.next_id:
-            membership_address = addresser.role.owner.address(message.role_id, user)
-            inputs.add(membership_address)
-
+        membership_address = addresser.role.owner.address(message.role_id, message.related_id)
+        inputs.add(membership_address)
         outputs = inputs
         return inputs, outputs
 
@@ -93,16 +91,15 @@ class DeleteRoleOwner(BaseMessage):
                 )
             )
 
-        for owner in message.next_id:
-            if not addresser.role.owner.exists_in_state_inputs(
-                inputs=payload.inputs,
-                input_state=input_state,
-                object_id=message.role_id,
-                related_id=owner,
-            ):
-                raise ValueError(
-                    "User {} is not an owner of role {}".format(owner, message.role_id)
-                )
+        if not addresser.role.owner.exists_in_state_inputs(
+            inputs=payload.inputs,
+            input_state=input_state,
+            object_id=message.role_id,
+            related_id=message.related_id,
+        ):
+            raise ValueError(
+                "User {} is not an owner of role {}".format(message.related_id, message.role_id)
+            )
 
     def apply_update(self, message, payload, object_id, related_id, output_state):
         """ Adds deleted role's address and the addresses of associated relationships
@@ -118,10 +115,9 @@ class DeleteRoleOwner(BaseMessage):
                 changed on the blockchain or will be removed from
                 the blockchain.
         """
-        for owner in message.next_id:
-            addresser.role.owner.remove_relationship(
-                object_id=object_id,
-                related_id=owner,
-                outputs=payload.outputs,
-                output_state=output_state,
-            )
+        addresser.role.owner.remove_relationship(
+            object_id=object_id,
+            related_id=message.related_id,
+            outputs=payload.outputs,
+            output_state=output_state,
+        )
