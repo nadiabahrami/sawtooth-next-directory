@@ -29,6 +29,7 @@ from rbac.common.role.delete_role_owner import DeleteRoleOwner
 from rbac.common.user import User
 from rbac.common.user.delete_user import DeleteUser
 from rbac.common.util import bytes_from_hex
+from rbac.common.sawtooth import batcher
 from rbac.providers.common.db_queries import connect_to_db
 
 LOGGER = get_default_logger(__name__)
@@ -275,23 +276,25 @@ def delete_user_transaction(inbound_entry, user_in_db, key_pair, data):
     """Composes transactions for deleting a user.  This includes deleting role_owner,
     role_admin, and role_member relationships and user object.
     """
-    # user_delete = DeleteUser()
+    user_delete = DeleteUser()
     next_id = user_in_db[0]["next_id"]
     inbound_entry = add_sawtooth_prereqs(
         entry_id=next_id, inbound_entry=inbound_entry, data_type="user"
     )
-    batch = create_owner_deletion_message(key_pair, next_id)
+    txn_list = create_owner_deletion_message(key_pair, next_id)
 
-    # message = user_delete.make(
-    #     signer_keypair=key_pair, next_id=next_id, **data
-    # )
-    # batch = user_delete.batch(
-    #     signer_keypair=key_pair,
-    #     signer_user_id=key_pair.public_key,
-    #     batch=batch,
-    #     message=message,
-    # )
-    inbound_entry["batch"] = batch.SerializeToString()
+    message = user_delete.make(signer_keypair=key_pair, next_id=next_id, **data)
+
+    payload = user_delete.make_payload(
+        message=message, signer_keypair=key_pair, signer_user_id=key_pair.public_key
+    )
+
+    transaction = batcher.make_transaction(payload=payload, signer_keypair=key_pair)
+    txn_list.extend([transaction])
+
+    if txn_list:
+        batch = batcher.make_batch_from_txns(transactions=txn_list, signer_keypair=key_pair)
+        inbound_entry["batch"] = batch.SerializeToString()
 
 
 def create_owner_deletion_message(key_pair, next_id):
@@ -299,23 +302,25 @@ def create_owner_deletion_message(key_pair, next_id):
     conn = connect_to_db()
     roles = (
         r.table("role_owners")
-            .filter({"related_id": next_id})
-            .coerce_to("array")
-            .run(conn)
+        .filter({"related_id": next_id})
+        .coerce_to("array")
+        .run(conn)
     )
     conn.close()
-    batch = None
+    txn_list = []
     if roles:
         owner_delete = DeleteRoleOwner()
         for role in roles:
             owner_message = owner_delete.make(
                 signer_keypair=key_pair, related_id=next_id, role_id=role["role_id"]
             )
-            batch = owner_delete.batch(
+            payload = owner_delete.make_payload(
+                message=owner_message,
                 signer_keypair=key_pair,
                 signer_user_id=key_pair.public_key,
-                batch=batch,
-                message=owner_message,
             )
-            break
-    return batch
+            transaction = batcher.make_transaction(
+                payload=payload, signer_keypair=key_pair
+            )
+            txn_list.extend([transaction])
+    return txn_list
