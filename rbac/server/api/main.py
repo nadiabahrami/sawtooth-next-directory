@@ -65,7 +65,7 @@ async def init(app, loop):
     session = aiohttp.ClientSession(connector=conn, loop=loop)
     app.config.HTTP_SESSION = session
 
-    await asyncio.sleep(30)
+    await asyncio.sleep(10)
 
     LOGGER.warning("Creating default admin user and role.")
 
@@ -182,8 +182,8 @@ def main():
         host="0.0.0.0", port=app.config.PORT, debug=False, access_log=False
     )
     loop = asyncio.get_event_loop()
-    asyncio.ensure_future(server)
-    asyncio.ensure_future(init(app, loop))
+    asyncio.gather(server)
+    loop.run_until_complete(init(app, loop))
     signal(SIGINT, lambda s, f: loop.close())
     try:
         loop.run_forever()
