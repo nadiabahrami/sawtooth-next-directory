@@ -85,7 +85,9 @@ def test_syncdirectionflag_username():
     """ Testing the presence and the value of syncdirection flag
         is set to OUTBOUND of a user in users table.
     """
-    expected_metadata = {"metadata": {"sync_direction": "OUTBOUND"}}
+    expected_metadata = {
+        "metadata": {"sync_direction": "OUTBOUND", "status": "UNCONFIRMED"}
+    }
     new_username = "nuthalapatinew"
     time.sleep(1)
     conn = connect_to_db()

@@ -72,6 +72,7 @@ async def create_new_role(request):
     else:
         set_metadata = request.json.get("metadata")
     set_metadata["sync_direction"] = "OUTBOUND"
+    set_metadata["status"] = "UNCONFIRMED"
     if not response:
         txn_key, txn_user_id = await utils.get_transactor_key(request)
         role_id = str(uuid4())

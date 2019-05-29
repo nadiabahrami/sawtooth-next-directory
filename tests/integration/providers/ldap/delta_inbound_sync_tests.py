@@ -626,7 +626,7 @@ def is_user_inbound(username_provided):
             .filter(
                 {
                     "username": username_provided,
-                    "metadata": {"sync_direction": "INBOUND"},
+                    "metadata": {"sync_direction": "INBOUND", "status": "UNCONFIRMED"},
                 }
             )
             .count()

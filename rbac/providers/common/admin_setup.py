@@ -40,7 +40,11 @@ def add_admin_accounts():
         }
         response = session.post("http://rbac-server:8000/api/users", json=admin_user)
         if response.status_code >= 300:
-            LOGGER.warning("There was an issue with creating Admin user.")
+            LOGGER.warning(
+                "There was an issue with creating Admin user.  Status: %s. Error: %s",
+                response.status_code,
+                response.json(),
+            )
             return
 
         LOGGER.warning("Creating NextAdmin role...")
@@ -55,7 +59,11 @@ def add_admin_accounts():
             "http://rbac-server:8000/api/roles", json=admin_role
         )
         if role_response.status_code >= 300:
-            LOGGER.warning("There was an issue with creating Admin Role.")
+            LOGGER.warning(
+                "There was an issue with creating Admin Role. Status: %s. Error: %s",
+                role_response.status_code,
+                role_response.json(),
+            )
             return
 
         LOGGER.warning("Adding Next Admin to NextAdmins role...")
@@ -73,7 +81,9 @@ def add_admin_accounts():
         )
         if add_role_member_response.status_code >= 300:
             LOGGER.warning(
-                "There was an issue with making the Admin a member of NextAdmins"
+                "There was an issue with making the Admin a member of NextAdmins. Status: %s. Error: %s",
+                add_role_member_response.status_code,
+                add_role_member_response.json(),
             )
             return
         LOGGER.info("Next Admin account and role creation complete!")

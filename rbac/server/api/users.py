@@ -107,6 +107,7 @@ async def create_new_user(request):
     else:
         set_metadata = request.json.get("metadata")
     set_metadata["sync_direction"] = "OUTBOUND"
+    set_metadata["status"] = "UNCONFIRMED"
 
     # Build create user transaction
     batch_list = User().batch_list(
@@ -192,6 +193,7 @@ async def update_user_details(request):
     else:
         set_metadata = request.json.get("metadata")
     set_metadata["sync_direction"] = "OUTBOUND"
+    set_metadata["status"] = "UNCONFIRMED"
 
     # Build and submit transaction
     batch_list = User().update.batch_list(

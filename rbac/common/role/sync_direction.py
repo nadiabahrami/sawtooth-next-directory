@@ -50,3 +50,34 @@ def set_sync_direction(role_id, direction):
         LOGGER.warning("Max retries reached when setting sync_direction. Not set.")
     conn.close()
     return response
+
+
+def set_status(role_id, status):
+    """Sets the status of user via next_id.
+    Args:
+        role_id: str: id of the role.
+        status: str: with value of "CONFIRMED" or "UNCONFIRMED"
+
+    Returns:
+        RethinkDB output of the update query.
+    """
+    conn = connect_to_db()
+    retry = 0
+    while retry < 3:
+        try:
+            response = (
+                r.table("roles")
+                .get_all(role_id, index="role_id")
+                .update({"metadata": {"status": status}})
+                .run(conn)
+            )
+        except r.errors.ReqlOpFailedError:
+            time.sleep(3)
+            retry += 1
+        else:
+            break
+
+    else:
+        LOGGER.warning("Max retries reached when setting sync_direction. Not set.")
+    conn.close()
+    return response

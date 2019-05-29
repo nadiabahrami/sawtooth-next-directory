@@ -158,7 +158,9 @@ def test_syncdirectionflag_rolename():
     """
     new_rolename = "ManagerRandom0501201902"
     new_username = "susansonrandom20"
-    expected_metadata = {"metadata": {"sync_direction": "OUTBOUND"}}
+    expected_metadata = {
+        "metadata": {"sync_direction": "OUTBOUND", "status": "UNCONFIRMED"}
+    }
     time.sleep(3)
     conn = connect_to_db()
     metadata_object = (
