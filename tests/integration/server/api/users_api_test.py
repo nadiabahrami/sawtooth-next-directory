@@ -138,7 +138,6 @@ def test_create_new_user_api():
 
 def test_update_manager():
     """ Creates a user and then updates their manager as nextAdmin
-
     Manager is the second user created here."""
     user1_payload = {
         "name": "Test User 9",
@@ -154,11 +153,9 @@ def test_update_manager():
     }
     with requests.Session() as session:
         user1_response = create_test_user(session, user1_payload)
-        user1_result = assert_api_success(user1_response)
-        user1_id = user1_result["data"]["user"]["id"]
+        user1_id = user1_response.json()["data"]["user"]["id"]
         user2_response = create_test_user(session, user2_payload)
-        user2_result = assert_api_success(user2_response)
-        user2_id = user2_result["data"]["user"]["id"]
+        user2_id = user2_response.json()["data"]["user"]["id"]
 
         next_admins = {
             "name": "NextAdmins",
@@ -171,15 +168,43 @@ def test_update_manager():
             "metadata": "",
         }
         role_response = create_test_role(session, next_admins)
+        print(role_response)
+        print(role_response.json())
         failed_response = update_manager(session, user2_id, manager_payload)
+        print(failed_response)
+        print(failed_response.json())
         assert failed_response.json() == {
             "code": 400,
             "message": "Proposal opener is not an Next Admin.",
         }
 
-        add_role_member(session, role_response.json()["data"]["id"], {"id": user2_id})
+        add_role = add_role_member(session, role_response.json()["data"]["id"], {"id": user2_id})
+        print("ADD user2 to NEXT ADMINS")
+        print(add_role)
+        print(add_role.json())
+        time.sleep(5)
+        conn = connect_to_db()
+        metadata_object = (
+            r.db("rbac")
+                .table("role_members")
+                .filter({"role_id":role_response.json()["data"]["id"]})
+                .coerce_to("array")
+                .run(conn)
+        )
+        conn.close()
+        print(metadata_object)
+        session.close()
 
+    with requests.Session() as session:
+        login_inputs = {"id": "testuser10", "password": "123456"}
+        response = session.post(
+            "http://rbac-server:8000/api/authorization/", json=login_inputs
+        )
+        print(response)
+        print(response.json())
         response = update_manager(session, user2_id, manager_payload)
+        print(response)
+        print(response.json())
         result = assert_api_success(response)
         proposal_response = get_proposal_with_retry(session, result["proposal_id"])
         proposal = assert_api_success(proposal_response)

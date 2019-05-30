@@ -119,7 +119,7 @@ async def get_role_membership(conn, next_id, role_id):
         next_id:
             str: id of the user
         role_id:
-            str: if of the role
+            str: id of the role
     """
     return (
         await r.table("role_members")
@@ -127,6 +127,25 @@ async def get_role_membership(conn, next_id, role_id):
         .coerce_to("array")
         .run(conn)
     )
+
+
+async def get_role_members(conn, role_id):
+    """Get the role members for a role
+    Args:
+        conn:
+            obj: database connection object
+        role_id:
+            str: id of the role
+    """
+    members = (
+        await r.table("role_members")
+        .get_all(role_id, index="role_id")
+        .get_field("identifiers")
+        .coerce_to("array")
+        .concat_map(lambda identifiers: identifiers)
+        .run(conn)
+    )
+    return members
 
 
 async def expire_role_member(conn, role_id, next_id):

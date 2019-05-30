@@ -148,13 +148,19 @@ async def update_proposal(request, proposal_id):
     proposal_resource = await proposals_query.fetch_proposal_resource(
         request.app.config.DB_CONN, proposal_id=proposal_id
     )
+    LOGGER.warning("This is your proposal_resource")
+    LOGGER.warning(proposal_resource)
     approvers_list = await compile_proposal_resource(
         request.app.config.DB_CONN, proposal_resource
     )
-    if txn_user_id not in approvers_list["approvers"]:
+    LOGGER.warning("approvals")
+    LOGGER.warning(approvers_list)
+    if txn_user_id not in approvers_list["approvers"] and not await utils.check_admin_status(txn_user_id):
         raise ApiBadRequest(
             "Bad Request: You don't have the authorization to APPROVE or REJECT the proposal"
         )
+    LOGGER.warning("THIS IS YOUR PROPOSAL RESOUORCE PRE_MESSAGE:")
+    LOGGER.warning(proposal_resource)
     batch_list = PROPOSAL_TRANSACTION[proposal_resource.get("type")][
         request.json["status"]
     ].batch_list(
@@ -165,6 +171,7 @@ async def update_proposal(request, proposal_id):
         related_id=proposal_resource.get("target"),
         reason=request.json.get("reason"),
     )
+    LOGGER.warning("YOU MADE THE PROPOSAL")
     await utils.send(
         request.app.config.VAL_CONN, batch_list, request.app.config.TIMEOUT
     )
@@ -186,7 +193,7 @@ async def compile_proposal_resource(conn, proposal_resource):
         ).run(conn)
     elif "users" in table:
         # approvers needs to be new manager in update manager scenario
-        proposal_resource["approvers"] = [proposal_resource.get("target")]
+        proposal_resource["approvers"] = await utils.get_next_admins()
     else:
         user_resource = await fetch_user_resource(conn, proposal_resource.get("object"))
         proposal_resource["approvers"] = [user_resource.get("manager")]

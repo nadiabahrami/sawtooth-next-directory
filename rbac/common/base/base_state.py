@@ -335,7 +335,10 @@ class StateBase:
 
     def get_from_input_state(self, inputs, input_state, object_id, related_id=None):
         """Get an address from the transaction input state"""
+        LOGGER.warning("YOU are in base state get_from_input_state")
+        LOGGER.warning([inputs, input_state, object_id, related_id])
         address = self.address(object_id=object_id, related_id=related_id)
+        LOGGER.warning(address)
         if address not in inputs:
             raise ValueError(
                 "{} address {} for {} {} target {} was not sent as an input address".format(
@@ -493,7 +496,10 @@ class StateBase:
     ):
         """Check an object exists in the blockchain via inputs and input_state
         input_state is the result of a state query on addresses=inputs"""
+        LOGGER.warning("You are in base_state exists_in_inputs")
+        LOGGER.warning([inputs, input_state, object_id, related_id])
         address = self.address(object_id=object_id, related_id=related_id)
+        LOGGER.warning(address)
         if address not in inputs:
             if skip_if_not_in_inputs:
                 return True

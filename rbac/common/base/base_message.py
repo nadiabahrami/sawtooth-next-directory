@@ -416,7 +416,7 @@ class BaseMessage(AddressBase):
         message = kwargs.get("message")
         if not message:
             message = self.make(**kwargs)
-
+        LOGGER.warning(message)
         payload = self.make_payload(
             message=message,
             signer_user_id=signer_user_id,

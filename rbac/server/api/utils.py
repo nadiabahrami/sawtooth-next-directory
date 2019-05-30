@@ -28,7 +28,7 @@ from rbac.server.api.errors import ApiBadRequest, ApiInternalError, ApiUnauthori
 from rbac.server.db import auth_query
 from rbac.server.db import blocks_query
 from rbac.server.db.db_utils import create_connection
-from rbac.server.db.roles_query import get_role_by_name, get_role_membership
+from rbac.server.db.roles_query import get_role_by_name, get_role_membership, get_role_members
 
 LOGGER = get_default_logger(__name__)
 
@@ -273,3 +273,18 @@ async def check_admin_status(next_id):
     if admin_membership:
         return True
     return False
+
+
+async def get_next_admins():
+    """Get members of NEXT admins. Return list
+    Args:
+        next_id:
+            str: user's next_id
+    """
+    conn = await create_connection()
+    admin_role = await get_role_by_name(conn, "NextAdmins")
+    if not admin_role:
+        raise ApiBadRequest("NEXT administrator group has not been created.")
+    admin_membership = await get_role_members(conn, admin_role[0]["role_id"])
+    conn.close()
+    return admin_membership

@@ -23,25 +23,28 @@ from sanic.response import json
 
 from rbac.common.crypto.keys import Key
 from rbac.common.crypto.secrets import encrypt_private_key, generate_api_key
+from rbac.common.logs import get_default_logger
+from rbac.common.sawtooth import batcher
 from rbac.common.user import User
 from rbac.server.api import utils
 from rbac.server.api.auth import authorized
-from rbac.server.api.errors import ApiBadRequest
-from rbac.server.api.proposals import compile_proposal_resource, PROPOSAL_TRANSACTION
-from rbac.server.db import auth_query
-from rbac.server.db import proposals_query
-from rbac.server.db import roles_query
-from rbac.server.db import users_query
-from rbac.server.db.db_utils import create_connection
-
-from rbac.common.logs import get_default_logger
-from rbac.common.sawtooth import batcher
 from rbac.server.blockchain_transactions.user_transaction import create_delete_user_txns
 from rbac.server.blockchain_transactions.role_transaction import (
     create_delete_role_owner_txns,
     create_delete_role_admin_txns,
     create_delete_role_member_txns,
 )
+from rbac.server.api.errors import ApiBadRequest
+from rbac.server.api.proposals import (
+    compile_proposal_resource,
+    PROPOSAL_TRANSACTION,
+    update_proposal,
+)
+from rbac.server.db import auth_query
+from rbac.server.db import proposals_query
+from rbac.server.db import roles_query
+from rbac.server.db import users_query
+from rbac.server.db.db_utils import create_connection
 
 
 LOGGER = get_default_logger(__name__)
@@ -307,9 +310,18 @@ async def get_user_relationships(request, next_id):
 async def update_manager(request, next_id):
     """Update a user's manager."""
     required_fields = ["id"]
+    LOGGER.warning("Next_id")
+    LOGGER.info(next_id)
+
     utils.validate_fields(required_fields, request.json)
     txn_key, txn_user_id = await utils.get_transactor_key(request)
+    LOGGER.warning("txn_user_id")
+    LOGGER.warning(txn_user_id)
     proposal_id = str(uuid4())
+    LOGGER.warning("Theses are is if you are an admin")
+    is_admin = await utils.check_admin_status(txn_user_id)
+    assigned_approvers = await utils.get_next_admins()
+    LOGGER.warning(is_admin)
     if await utils.check_admin_status(txn_user_id):
         batch_list = User().manager.propose.batch_list(
             signer_keypair=txn_key,
@@ -319,14 +331,25 @@ async def update_manager(request, next_id):
             new_manager_id=request.json.get("id"),
             reason=request.json.get("reason"),
             metadata=request.json.get("metadata"),
-            assigned_approver=[request.json.get("id")],
+            assigned_approver=assigned_approvers,
         )
         await utils.send(
             request.app.config.VAL_CONN, batch_list, request.app.config.TIMEOUT
         )
-    else:
-        raise ApiBadRequest("Proposal opener is not an Next Admin.")
-    return json({"proposal_id": proposal_id})
+
+        request.json["status"] = "APPROVED"
+        request.json[
+            "reason"
+        ] = "NEXT Admin assigned manager. Proposal is autoapproved."
+        await update_proposal(request, proposal_id)
+        return json(
+            {
+                "message": "NEXT Admin assigned manager. Proposal is autoapproved",
+                "proposal_id": proposal_id,
+            }
+        )
+    LOGGER.info("You do not have access in the damn things.")
+    raise ApiBadRequest("Proposal opener is not an Next Admin.")
 
 
 @USERS_BP.put("api/users/password")
