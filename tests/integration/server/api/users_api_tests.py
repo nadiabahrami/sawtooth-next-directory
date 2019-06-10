@@ -39,7 +39,8 @@ from tests.utilities import (
     get_user_mapping_entry,
     get_user_metadata_entry,
     insert_user,
-    update_manager,
+    log_in,
+    log_in_as_admin,
 )
 
 LOGGER = get_default_logger(__name__)
@@ -49,6 +50,7 @@ def test_valid_unique_username():
     """ Testing the creation of an user
         with create user API.
     """
+
     user_input = {
         "name": "Sri Nuthal",
         "username": "nuthalapatinew",
@@ -59,6 +61,13 @@ def test_valid_unique_username():
     with requests.Session() as session:
         response = session.post("http://rbac-server:8000/api/users", json=user_input)
         assert response.json()["data"]["message"] == expected["message"]
+
+
+#def test_create_user_as_nonadmin():
+
+
+#def test_create_user_as_admin():
+
 
 
 def test_invalid_duplicate_username():

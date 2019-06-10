@@ -16,6 +16,7 @@
 import os
 from uuid import uuid4
 import hashlib
+import logging
 
 from environs import Env
 from sanic import Blueprint
@@ -78,9 +79,27 @@ async def create_new_user(request):
         "email": env("NEXT_ADMIN_EMAIL"),
         "password": env("NEXT_ADMIN_PASS"),
     }
+    logging.critical(str(request.json))
+    logging.critical(str(admin_role))
     if request.json != admin_role:
+        logging.critical("ARE WE IN YET BOSS?")
         if not env.int("ENABLE_NEXT_BASE_USE"):
             raise ApiBadRequest("Not a valid action. Source not enabled")
+
+        # Check to see if person creating a new user is admin
+        txn_key, txn_user_id = "", ""
+        try:
+            txn_key, txn_user_id = await utils.get_transactor_key(request)
+        except:
+            raise ApiBadRequest (
+                "You are not signed in."
+            )
+        is_admin = await utils.check_admin_status(txn_user_id)
+        if not is_admin:
+            raise ApiBadRequest(
+                "You do not have the authorization to create an account."
+            )
+
     required_fields = ["name", "username", "password", "email"]
     utils.validate_fields(required_fields, request.json)
     username_created = request.json.get("username")

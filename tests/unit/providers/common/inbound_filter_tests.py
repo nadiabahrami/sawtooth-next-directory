@@ -20,7 +20,6 @@ from rbac.providers.common.inbound_filters import (
     inbound_user_filter,
 )
 
-
 def test_inbound_user_filter():
     """Test the inbound user filter for azure transforms and returns a user dict."""
     result = inbound_user_filter({"id": "123-456-abs3"}, "azure")

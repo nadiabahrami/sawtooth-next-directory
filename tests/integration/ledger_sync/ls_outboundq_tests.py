@@ -13,11 +13,14 @@
 # limitations under the License.
 # -----------------------------------------------------------------------------
 """Integration tests for role APIs"""
+from environs import Env
+import os
 import requests
+import logging
 
 from rbac.common.logs import get_default_logger
-from rbac.providers.common.db_queries import peek_at_q_unfiltered
-from tests.rbac.api.assertions import assert_api_success
+from rbac.providers.common.admin_setup import add_admin_accounts
+from rbac.providers.common.db_queries import peek_at_queue
 from tests.utilities import (
     approve_proposal,
     create_test_role,
@@ -27,10 +30,43 @@ from tests.utilities import (
     get_outbound_queue_depth,
     get_proposal_with_retry,
     log_in,
-    add_role_member,
+    log_in_as_admin,
 )
 
 LOGGER = get_default_logger(__name__)
+pLDAP_DC = os.getenv("LDAP_DC")
+
+
+def setup_module():
+    env = Env()
+    admin_user = {
+        "name": env("NEXT_ADMIN_NAME"),
+        "username": env("NEXT_ADMIN_USER"),
+        "password": env("NEXT_ADMIN_PASS"),
+        "email": env("NEXT_ADMIN_EMAIL"),
+    }
+    response = session.post("http://rbac-server:8000/api/users", json=admin_user)
+    user_response_json = response.json()
+    user_next_id = user_response_json["data"]["user"]["id"]
+    admin_role = {
+        "name": "NextAdmins",
+        "owners": user_next_id,
+        "administrators": user_next_id,
+    }
+    role_response = session.post(
+        "http://rbac-server:8000/api/roles", json=admin_role
+    )
+    role_next_id = role_response.json()["data"]["id"]
+    add_user = {
+        "pack_id": None,
+        "id": user_next_id,
+        "reason": None,
+        "metadata": None,
+    }
+    add_role_member_response = session.post(
+        ("http://rbac-server:8000/api/roles/{}/members".format(role_next_id)),
+        json=add_user,
+    )
 
 
 def test_role_outq_insertion():
@@ -43,6 +79,16 @@ def test_role_outq_insertion():
         "email": "testuniqueuser1@biz.co",
     }
     with requests.Session() as session:
+        admin_payload = {
+            "id": env("NEXT_ADMIN_USER"),
+            "password": env("NEXT_ADMIN_PASS"),
+        }
+        response = session.post(
+            "http://rbac-server:8000/api/authorization/", json=admin_payload
+        )
+        logging.critical("RES AFTER POST: " + str(response.json()))
+        sleep(3)
+
         expected_result = True
         user_response1 = create_test_user(session, user1_payload)
         user1_result = assert_api_success(user_response1)

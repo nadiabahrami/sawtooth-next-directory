@@ -32,6 +32,7 @@ def add_admin_accounts():
     LOGGER.warning("Creating default admin user and role.")
     with requests.Session() as session:
         LOGGER.warning("Creating Next Admin user...")
+        logging.warning("admin user: " + env("NEXT_ADMIN_NAME"))
         admin_user = {
             "name": env("NEXT_ADMIN_NAME"),
             "username": env("NEXT_ADMIN_USER"),

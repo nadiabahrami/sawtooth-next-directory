@@ -245,7 +245,7 @@ async def fetch_user_relationships(conn, next_id):
         .merge(
             {
                 "id": r.row["next_id"],
-                "direct_reports": fetch_user_ids_by_manager(remote_id[0]["remote_id"]),
+                "direct_reports": fetch_user_ids_by_manager(next_id),
             }
         )
         .without(

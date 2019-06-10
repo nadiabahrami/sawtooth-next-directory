@@ -13,10 +13,13 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 """Utility functions to assist with tests in cleanup or running."""
+from environs import Env
 from time import sleep
 import rethinkdb as r
-from rbac.common.logs import get_default_logger
+import logging
 from rbac.providers.common.db_queries import connect_to_db
+from rbac.common.logs import get_default_logger
+from rbac.server.api import utils
 
 LOGGER = get_default_logger(__name__)
 
@@ -69,6 +72,7 @@ def create_test_task(session, task_payload):
 def create_test_user(session, user_payload):
     """Create a user and authenticate to use api endpoints during testing."""
     response = session.post("http://rbac-server:8000/api/users", json=user_payload)
+    logging.critical("MESSAGE: " + str(response.json()))
     sleep(3)
     return response
 
@@ -541,6 +545,26 @@ def log_in(session, credentials_payload):
     response = session.post(
         "http://rbac-server:8000/api/authorization/", json=credentials_payload
     )
+    sleep(3)
+    return response
+
+
+def log_in_as_admin(session):
+    """ Log in as NEXT admin
+    
+    Args:
+        session:
+            object: current session object
+    """
+    env = Env()
+    admin_payload = {
+        "id": env("NEXT_ADMIN_USER"),
+        "password": env("NEXT_ADMIN_PASS"),
+    }
+    response = session.post(
+        "http://rbac-server:8000/api/authorization/", json=admin_payload
+    )
+    logging.critical("RES AFTER POST: " + str(response.json()))
     sleep(3)
     return response
 
