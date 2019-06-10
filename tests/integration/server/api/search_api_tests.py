@@ -14,7 +14,7 @@
 # -----------------------------------------------------------------------------
 """Authentication API Endpoint Test"""
 import requests
-from tests.utilities import create_test_user, delete_user_by_username
+from tests.utils import create_test_user, delete_user_by_username
 
 
 def test_search_api():

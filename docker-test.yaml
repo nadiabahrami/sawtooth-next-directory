@@ -135,7 +135,7 @@ services:
     image: rbac-shell:${ISOLATION_ID-latest}
     volumes:
       - ".:/project/hyperledger-rbac"
-    command: pytest ./tests/integration/
+    command: pytest ./tests/
     environment:
       - LOGGING_LEVEL=${LOGGING_LEVEL:-INFO}
       - PYTHONPATH=/project/hyperledger-rbac/

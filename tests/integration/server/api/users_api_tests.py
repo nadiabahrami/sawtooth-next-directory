@@ -23,7 +23,7 @@ from rbac.providers.common.db_queries import connect_to_db
 from rbac.server.api.utils import check_admin_status
 from rbac.common.logs import get_default_logger
 from tests.rbac.api.assertions import assert_api_success
-from tests.utilities import (
+from tests.utils import (
     add_role_member,
     check_user_is_pack_owner,
     create_test_role,

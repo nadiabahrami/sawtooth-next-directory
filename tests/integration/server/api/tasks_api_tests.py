@@ -14,7 +14,7 @@
 # ------------------------------------------------------------------------------
 """Validating Tasks API Endpoint Test"""
 import requests
-from tests.utilities import (
+from tests.utils import (
     create_test_task,
     create_test_user,
     delete_user_by_username,

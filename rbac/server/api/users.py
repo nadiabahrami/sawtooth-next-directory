@@ -72,18 +72,22 @@ async def fetch_all_users(request):
 @USERS_BP.post("api/users")
 async def create_new_user(request):
     """Create a new user."""
+    logging.critical("line 1")
     env = Env()
-    admin_role = {
+    logging.critical("line 2")
+    admin_user = {
         "name": env("NEXT_ADMIN_NAME"),
         "username": env("NEXT_ADMIN_USER"),
         "email": env("NEXT_ADMIN_EMAIL"),
         "password": env("NEXT_ADMIN_PASS"),
     }
+    logging.critical("line 3")
     logging.critical(str(request.json))
-    logging.critical(str(admin_role))
-    if request.json != admin_role:
+    logging.critical(str(admin_user))
+    if request.json != admin_user:
         logging.critical("ARE WE IN YET BOSS?")
         if not env.int("ENABLE_NEXT_BASE_USE"):
+            logging.critical("HERE 1")
             raise ApiBadRequest("Not a valid action. Source not enabled")
 
         # Check to see if person creating a new user is admin
@@ -91,15 +95,17 @@ async def create_new_user(request):
         try:
             txn_key, txn_user_id = await utils.get_transactor_key(request)
         except:
+            logging.critical("HERE 2")
             raise ApiBadRequest (
                 "You are not signed in."
             )
         is_admin = await utils.check_admin_status(txn_user_id)
         if not is_admin:
+            logging.critical("HERE 3")
             raise ApiBadRequest(
                 "You do not have the authorization to create an account."
             )
-
+    logging.critical("FOUND OUT THAT IM ADMIN")
     required_fields = ["name", "username", "password", "email"]
     utils.validate_fields(required_fields, request.json)
     username_created = request.json.get("username")
@@ -111,6 +117,7 @@ async def create_new_user(request):
         > 0
     ):
         # Throw Error response to Next_UI
+        logging.critical("HERE 4")
         raise ApiBadRequest(
             "Username already exists. Please give a different Username."
         )

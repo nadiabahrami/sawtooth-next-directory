@@ -18,7 +18,7 @@ import time
 import pytest
 import requests
 
-from tests.utilities import create_test_user
+from tests.utils import create_test_user
 
 LDAP_SERVER = os.getenv("LDAP_SERVER")
 

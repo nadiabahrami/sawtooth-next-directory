@@ -24,7 +24,7 @@ import rethinkdb as r
 from rbac.providers.common.db_queries import connect_to_db
 
 # from rbac.server.db.users_query import fetch_manager_chain
-from tests.utilities import (
+from tests.utils import (
     create_test_role,
     create_test_user,
     delete_user_by_username,

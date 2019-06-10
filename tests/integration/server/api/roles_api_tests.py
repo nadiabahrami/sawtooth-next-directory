@@ -18,7 +18,7 @@ import pytest
 import requests
 import rethinkdb as r
 from rbac.providers.common.db_queries import connect_to_db
-from tests.utilities import (
+from tests.utils import (
     approve_proposal,
     create_test_role,
     create_test_task,

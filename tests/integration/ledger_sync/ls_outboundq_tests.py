@@ -16,12 +16,11 @@
 from environs import Env
 import os
 import requests
-import logging
 
 from rbac.common.logs import get_default_logger
 from rbac.providers.common.admin_setup import add_admin_accounts
 from rbac.providers.common.db_queries import peek_at_queue
-from tests.utilities import (
+from tests.utils import (
     approve_proposal,
     create_test_role,
     create_test_user,
@@ -33,40 +32,11 @@ from tests.utilities import (
     log_in_as_admin,
 )
 
+from tests.utilities.fixtures.creation import (
+    create_admin_user,
+)
+
 LOGGER = get_default_logger(__name__)
-pLDAP_DC = os.getenv("LDAP_DC")
-
-
-def setup_module():
-    env = Env()
-    admin_user = {
-        "name": env("NEXT_ADMIN_NAME"),
-        "username": env("NEXT_ADMIN_USER"),
-        "password": env("NEXT_ADMIN_PASS"),
-        "email": env("NEXT_ADMIN_EMAIL"),
-    }
-    response = session.post("http://rbac-server:8000/api/users", json=admin_user)
-    user_response_json = response.json()
-    user_next_id = user_response_json["data"]["user"]["id"]
-    admin_role = {
-        "name": "NextAdmins",
-        "owners": user_next_id,
-        "administrators": user_next_id,
-    }
-    role_response = session.post(
-        "http://rbac-server:8000/api/roles", json=admin_role
-    )
-    role_next_id = role_response.json()["data"]["id"]
-    add_user = {
-        "pack_id": None,
-        "id": user_next_id,
-        "reason": None,
-        "metadata": None,
-    }
-    add_role_member_response = session.post(
-        ("http://rbac-server:8000/api/roles/{}/members".format(role_next_id)),
-        json=add_user,
-    )
 
 
 def test_role_outq_insertion():
@@ -78,7 +48,9 @@ def test_role_outq_insertion():
         "password": "123456",
         "email": "testuniqueuser1@biz.co",
     }
+    env = Env()
     with requests.Session() as session:
+        admin_id = create_admin_user()
         admin_payload = {
             "id": env("NEXT_ADMIN_USER"),
             "password": env("NEXT_ADMIN_PASS"),
@@ -86,8 +58,9 @@ def test_role_outq_insertion():
         response = session.post(
             "http://rbac-server:8000/api/authorization/", json=admin_payload
         )
-        logging.critical("RES AFTER POST: " + str(response.json()))
-        sleep(3)
+
+        LOGGER.critical("ADMIN ID: " + str(admin_id))
+        LOGGER.critical("RESPONSE OF AUTH: " + str(response))
 
         expected_result = True
         user_response1 = create_test_user(session, user1_payload)

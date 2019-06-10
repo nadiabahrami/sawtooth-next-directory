@@ -16,7 +16,7 @@
 
 import requests
 
-from tests.utilities import create_test_user, get_pack_by_pack_id
+from tests.utils import create_test_user, get_pack_by_pack_id
 
 
 TEST_USERS = [

@@ -41,7 +41,7 @@ from rbac.providers.ldap.delta_inbound_sync import (
     insert_updated_entries,
     insert_deleted_entries,
 )
-from tests.utilities import (
+from tests.utils import (
     check_user_is_pack_owner,
     create_test_role,
     create_test_pack,

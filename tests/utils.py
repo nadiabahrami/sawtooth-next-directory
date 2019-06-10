@@ -72,7 +72,6 @@ def create_test_task(session, task_payload):
 def create_test_user(session, user_payload):
     """Create a user and authenticate to use api endpoints during testing."""
     response = session.post("http://rbac-server:8000/api/users", json=user_payload)
-    logging.critical("MESSAGE: " + str(response.json()))
     sleep(3)
     return response
 
@@ -564,7 +563,6 @@ def log_in_as_admin(session):
     response = session.post(
         "http://rbac-server:8000/api/authorization/", json=admin_payload
     )
-    logging.critical("RES AFTER POST: " + str(response.json()))
     sleep(3)
     return response
 
