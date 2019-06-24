@@ -20,16 +20,20 @@ from environs import Env
 
 from rbac.common.logs import get_default_logger
 from tests.rbac.api.assertions import assert_api_success
-from tests.utilities import (
-    approve_proposal,
+from tests.utilities.creation_utils import (
+    create_next_admin,
     create_test_role,
     create_test_user,
+    user_login,
+)
+from tests.utilities.db_queries import get_role_by_name
+from tests.utils import (
+    approve_proposal,
     delete_role_by_name,
     delete_user_by_username,
     get_outbound_queue_depth,
     get_outbound_queue_entry,
     get_proposal_with_retry,
-    log_in,
     add_role_member,
 )
 
@@ -58,6 +62,7 @@ def test_role_outq_insertion():
         "email": "testuniqueuser1@biz.co",
     }
     with requests.Session() as session:
+        create_next_admin(session)
         user_response1 = create_test_user(session, user1_payload)
         user1_result = assert_api_success(user_response1)
         user1_id = user1_result["data"]["user"]["id"]
@@ -83,9 +88,9 @@ def test_role_outq_insertion():
             "action": "",
         }
 
-        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
-        outbound_entry[0].pop("timestamp")
-        outbound_entry[0].pop("id")
+        # Check status of new outbound_entry
+        role_entry = get_role_by_name("TestUniqueRole0501201903")
+        outbound_entry = get_outbound_queue_entry(role_entry[0])
         assert outbound_entry[0] == expected_payload
 
         delete_role_by_name("TestUniqueRole0501201903")
@@ -104,27 +109,17 @@ def test_update_manager_outqueue():
         "password": "123456",
         "email": "test0521201901@biz.co",
     }
-    user2_payload = {
-        "name": "Test User 0521201902",
-        "username": "test0521201902",
-        "password": "123456",
-        "email": "test0521201902@biz.co",
-    }
     with requests.Session() as session:
+        user2_response = create_next_admin(session)
+        user2_result = assert_api_success(user2_response)
+        user2_id = user2_result["data"]["next_id"]
         user1_response = create_test_user(session, user1_payload)
         user1_result = assert_api_success(user1_response)
         user1_id = user1_result["data"]["user"]["id"]
-        user2_response = create_test_user(session, user2_payload)
-        user2_result = assert_api_success(user2_response)
-        user2_id = user2_result["data"]["user"]["id"]
         start_depth = get_outbound_queue_depth()
-        next_admins = {
-            "name": "NextAdmins",
-            "owners": [user2_id],
-            "administrators": [user2_id],
-        }
-        role_response = create_test_role(session, next_admins)
-        add_role_member(session, role_response.json()["data"]["id"], {"id": user2_id})
+
+        role_response = get_role_by_name("NextAdmins")
+        add_role_member(session, role_response[0]["role_id"], {"id": user2_id})
         manager_payload = {
             "id": user2_id,
             "reason": "Integration test of adding role owner.",
@@ -136,15 +131,12 @@ def test_update_manager_outqueue():
         )
         result = assert_api_success(response)
         proposal_response = get_proposal_with_retry(session, result["proposal_id"])
-        proposal = assert_api_success(proposal_response)
+        assert_api_success(proposal_response)
         # Logging in as role owner
-        credentials_payload = {
-            "id": user2_payload["username"],
-            "password": user2_payload["password"],
-        }
-        log_in(session, credentials_payload)
+        env = Env()
+        user_login(session, env("NEXT_ADMIN_USER"), env("NEXT_ADMIN_PASS"))
         # Approve proposal as role owner
-        approval_response = approve_proposal(session, result["proposal_id"])
+        approve_proposal(session, result["proposal_id"])
         end_depth = get_outbound_queue_depth()
         assert end_depth > start_depth
         # TODO: Add tests to check for UNCONFIRMED outbound_queue entry status
@@ -172,6 +164,7 @@ def test_add_role_owner_outqueue():
         "email": "test0521201904@biz.co",
     }
     with requests.Session() as session:
+        create_next_admin(session)
         user_response1 = create_test_user(session, user1_payload)
         user1_result = assert_api_success(user_response1)
         user1_id = user1_result["data"]["user"]["id"]
@@ -199,26 +192,17 @@ def test_add_role_owner_outqueue():
         )
         result = assert_api_success(response)
         proposal_response = get_proposal_with_retry(session, result["proposal_id"])
-        proposal = assert_api_success(proposal_response)
+        assert_api_success(proposal_response)
         # Logging in as role owner
-        credentials_payload = {
-            "id": user1_payload["username"],
-            "password": user1_payload["password"],
-        }
-        log_in(session, credentials_payload)
+        user_login(session, user1_payload["username"], user1_payload["password"])
         # Approve proposal as role owner
-        approval_response = approve_proposal(session, result["proposal_id"])
+        approve_proposal(session, result["proposal_id"])
         end_depth = get_outbound_queue_depth()
         assert end_depth > start_depth
 
         # Check status of new outbound_entry
-        outbound_queue_data = {
-            "description": "Test Role 1",
-            "members": [],
-            "remote_id": "",
-        }
-
-        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
+        role_entry = get_role_by_name("TestRole0521201901")
+        outbound_entry = get_outbound_queue_entry(role_entry[0])
         assert outbound_entry[0]["status"] == "UNCONFIRMED"
 
         delete_role_by_name("TestRole0521201901")
@@ -244,6 +228,7 @@ def test_add_role_member_outqueue():
         "email": "testmember@biz.co",
     }
     with requests.Session() as session:
+        create_next_admin(session)
         user1_response = create_test_user(session, user1_payload)
         user1_result = assert_api_success(user1_response)
         user1_id = user1_result["data"]["user"]["id"]
@@ -271,25 +256,17 @@ def test_add_role_member_outqueue():
         )
         result = assert_api_success(response)
         proposal_response = get_proposal_with_retry(session, result["proposal_id"])
-        proposal = assert_api_success(proposal_response)
+        assert_api_success(proposal_response)
         # Logging in as role owner
-        credentials_payload = {
-            "id": user1_payload["username"],
-            "password": user1_payload["password"],
-        }
-        log_in(session, credentials_payload)
+        user_login(session, user1_payload["username"], user1_payload["password"])
         # Approve proposal as role owner
-        approval_response = approve_proposal(session, result["proposal_id"])
+        approve_proposal(session, result["proposal_id"])
         end_depth = get_outbound_queue_depth()
         assert end_depth > start_depth
 
         # Check status of new outbound_entry
-        outbound_queue_data = {
-            "description": "Test Role 3",
-            "members": [],
-            "remote_id": "",
-        }
-        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
+        role_entry = get_role_by_name("TestRole0521201902")
+        outbound_entry = get_outbound_queue_entry(role_entry[0])
         assert outbound_entry[0]["status"] == "UNCONFIRMED"
 
         delete_role_by_name("TestRole0521201902")
