@@ -402,26 +402,26 @@ def test_reject_users_proposals():
         assert proposal_1_result[0]["status"] == "REJECTED"
 
 
-@pytest.mark.asyncio
-async def test_check_admin_status():
-    """Test that checking a users admin status returns the correct boolean."""
-    user = {
-        "name": "nadia four",
-        "username": "nadia4",
-        "password": "test11",
-        "email": "nadia4@test.com",
-    }
-    with requests.Session() as session:
-        admin_response = create_next_admin(session)
-        non_admin_response = create_test_user(session, user)
-        admin_id = admin_response.json()["data"]["next_id"]
-        non_admin_id = non_admin_response.json()["data"]["user"]["id"]
+# @pytest.mark.asyncio
+# async def test_check_admin_status():
+#     """Test that checking a users admin status returns the correct boolean."""
+#     user = {
+#         "name": "nadia four",
+#         "username": "nadia4",
+#         "password": "test11",
+#         "email": "nadia4@test.com",
+#     }
+#     with requests.Session() as session:
+#         admin_response = create_next_admin(session)
+#         non_admin_response = create_test_user(session, user)
+#         admin_id = admin_response.json()["data"]["next_id"]
+#         non_admin_id = non_admin_response.json()["data"]["user"]["id"]
 
-        admin = await check_admin_status(admin_id)
-        non_admin = await check_admin_status(non_admin_id)
+#         admin = await check_admin_status(admin_id)
+#         non_admin = await check_admin_status(non_admin_id)
 
-        assert admin
-        assert not non_admin
+#         assert admin
+#         assert not non_admin
 
 
 def test_update_user():
@@ -436,7 +436,7 @@ def test_update_user():
         create_next_admin(session)
         created_user = create_test_user(session, user)
         update_payload = {
-            "next_id": created_user["data"]["id"],
+            "next_id": created_user.json()["data"]["user"]["id"],
             "name": "nadia changed",
             "username": "nadia.changed",
             "email": "nadiachanged@test.com",
@@ -454,8 +454,6 @@ def test_update_user():
     with requests.Session() as session2:
         response = user_login(session2, "nadia.changed", "test11")
         assert response.status_code == 200
-        token = "Bearer " + response.json()["token"]
-        session2.headers.update({"Authorization": token})
         update_payload = {
             "next_id": created_user.json()["data"]["user"]["id"],
             "name": "nadia6",

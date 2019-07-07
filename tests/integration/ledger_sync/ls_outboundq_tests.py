@@ -88,9 +88,9 @@ def test_role_outq_insertion():
             "action": "",
         }
 
-        # Check status of new outbound_entry
-        role_entry = get_role_by_name("TestUniqueRole0501201903")
-        outbound_entry = get_outbound_queue_entry(role_entry[0])
+        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
+        outbound_entry[0].pop("timestamp")
+        outbound_entry[0].pop("id")
         assert outbound_entry[0] == expected_payload
 
         delete_role_by_name("TestUniqueRole0501201903")
@@ -201,8 +201,13 @@ def test_add_role_owner_outqueue():
         assert end_depth > start_depth
 
         # Check status of new outbound_entry
-        role_entry = get_role_by_name("TestRole0521201901")
-        outbound_entry = get_outbound_queue_entry(role_entry[0])
+        outbound_queue_data = {
+            "description": "Test Role 1",
+            "members": [],
+            "remote_id": "",
+        }
+
+        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
         assert outbound_entry[0]["status"] == "UNCONFIRMED"
 
         delete_role_by_name("TestRole0521201901")
@@ -265,8 +270,12 @@ def test_add_role_member_outqueue():
         assert end_depth > start_depth
 
         # Check status of new outbound_entry
-        role_entry = get_role_by_name("TestRole0521201902")
-        outbound_entry = get_outbound_queue_entry(role_entry[0])
+        outbound_queue_data = {
+            "description": "Test Role 3",
+            "members": [],
+            "remote_id": "",
+        }
+        outbound_entry = get_outbound_queue_entry(outbound_queue_data)
         assert outbound_entry[0]["status"] == "UNCONFIRMED"
 
         delete_role_by_name("TestRole0521201902")
